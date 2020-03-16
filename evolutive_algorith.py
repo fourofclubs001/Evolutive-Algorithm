@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from tqdm import tqdm
 
 class Agent():
@@ -190,16 +191,19 @@ def reproduce(surface_size, agents, mutation_rate, reproduce_energy):
         
         if agent.energy > reproduce_energy*2:
             
-            pos = np.zeros(2)
-            power = agent.power + (mutation_rate * (np.random.rand() - 0.5))
-            speed = agent.speed + (mutation_rate * (np.random.rand() - 0.5))
-            energy = reproduce_energy
+            while agent.energy > reproduce_energy*2:
             
-            agent.energy -= reproduce_energy
-            
+                agent.energy -= reproduce_energy
+                
+                pos = np.random.rand(2)
+                power = agent.power + (mutation_rate * (np.random.rand() - 0.5))
+                speed = agent.speed + (mutation_rate * (np.random.rand() - 0.5))
+                energy = reproduce_energy
+                
+                new_agents = np.append(new_agents, 
+                                       Agent(pos, power, speed, energy))
+                
             new_agents = np.append(new_agents, agent)
-            new_agents = np.append(new_agents, 
-                                   Agent(pos, power, speed, energy))
             
         else:
             
@@ -226,9 +230,8 @@ def get_bar_height(prop_list):
 
     return bar_height, resolution
 
-def graph_property_distribution(agents, n_agents_list):
+def get_properties_list(agents):
     
-    # collect data
     power_list = np.array([])
     speed_list = np.array([])
     energy_list = np.array([])
@@ -239,37 +242,53 @@ def graph_property_distribution(agents, n_agents_list):
         speed_list = np.append(speed_list, agent.speed)
         energy_list = np.append(energy_list, agent.energy)
         
+    return power_list, speed_list, energy_list
+    
+def graph_property_distribution(agents, n_agents_list):
+    
+    # collect data
+    power_list, speed_list, energy_list = get_properties_list(agents)
+        
     power_bar_height, power_resolution = get_bar_height(power_list)
     speed_bar_height, speed_resolution = get_bar_height(speed_list)
     energy_bar_height, energy_resolution = get_bar_height(energy_list)
     
     # Graphs
-    plt.figure(1, figsize = (7,11))
+    plt.figure(2, figsize = (7,7))
     
-    plt.subplot(321)
+    plt.subplot(221)
     plt.title('Power')
     plt.bar(power_resolution, power_bar_height)
     
-    plt.subplot(322)
+    plt.subplot(222)
     plt.title('speed')
     plt.bar(speed_resolution, speed_bar_height)
     
-    plt.subplot(323)
-    plt.title('energy')
-    plt.plot(energy_resolution, energy_bar_height)
+    plt.subplot(223)
+    plt.title('Agents by properties')
+    plt.scatter(power_list, speed_list, alpha = 0.1)
+    plt.xlabel('Power')
+    plt.ylabel('Speed')
     
-    plt.subplot(324)
+    plt.subplot(224)
     plt.title('Population')
     plt.plot(np.arange(len(n_agents_list)), n_agents_list)
     
-    plt.subplot(325)
-    plt.title('Agents by properties')
-    plt.scatter(power_list, speed_list, alpha = 0.1)
-    
     plt.show()
 
+def make_animation(fig, frames):
+    
+    # create animation
+    ani = animation.ArtistAnimation(fig, 
+                                    frames, 
+                                    interval = 50, 
+                                    blit = True, 
+                                    repeat_delay = 400)
+    
+    ani.save('agents_by_speed_power.mp4') # save animation
+
 # variables
-epochs = 5000
+epochs = 1000
 n_agents = 100
 
 power_mean = 5
@@ -283,12 +302,17 @@ energy_sd = 0
 
 mutation_rate = 1
 
-reproduce_energy = 10
+reproduce_energy = 500
 
 n_food = 100
 food_value = 100
 
 surface_size = 25 # environment size
+
+
+# animation
+fig = plt.figure()
+ims = []
 
 # create population
 agents = create_population(surface_size, n_agents, power_mean, power_sd, 
@@ -312,12 +336,22 @@ for i in tqdm(range(epochs)):
     # metrics
     n_agents_list = np.append(n_agents_list, len(agents))
     
+    #animation
+    power_list, speed_list, _ = get_properties_list(agents)
+    plt.title('Agents by properties')
+    plt.xlabel('Power')
+    plt.ylabel('Speed')
+    im = plt.scatter(power_list, speed_list, alpha = 0.1)
+    ims.append([im])
+    
 agents = eliminate(agents)
 
+#metrics
 n_agents_list = np.append(n_agents_list, len(agents))
 
 if len(agents) > 0:  
     
+    make_animation(fig, ims)
     graph_property_distribution(agents, n_agents_list)
     
 else:
