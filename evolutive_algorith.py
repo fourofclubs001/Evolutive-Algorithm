@@ -243,7 +243,32 @@ def get_properties_list(agents):
         energy_list = np.append(energy_list, agent.energy)
         
     return power_list, speed_list, energy_list
+
+def get_plot_grid(power_list, speed_list):
     
+    max_pow = int(np.amax(power_list))
+    max_speed = int(np.amax(speed_list))
+    
+    x = np.repeat(np.arange(max_pow) + 1, max_speed)
+    y_prev = np.arange(max_speed, dtype = np.int32) + 1
+    y = np.array([], dtype = np.int32)
+    
+    for i in range(max_pow):
+        
+        y = np.append(y, y_prev)
+        
+    s = np.zeros(max_pow * max_speed)
+        
+    for power in power_list:
+        
+        for speed in speed_list:
+            
+            s[int(((power - 1)*max_speed) + (speed - 1))] += 1
+    
+    s /= len(power_list)
+    
+    return x, y, s
+
 def graph_property_distribution(agents, n_agents_list):
     
     # collect data
@@ -266,7 +291,9 @@ def graph_property_distribution(agents, n_agents_list):
     
     plt.subplot(223)
     plt.title('Agents by properties')
-    plt.scatter(power_list, speed_list, alpha = 0.1)
+    x, y, s = get_plot_grid(power_list, speed_list)
+    plt.scatter(x, y, s = s)
+    #plt.scatter(power_list, speed_list, alpha = 0.1)
     plt.xlabel('Power')
     plt.ylabel('Speed')
     
@@ -341,7 +368,9 @@ for i in tqdm(range(epochs)):
     plt.title('Agents by properties')
     plt.xlabel('Power')
     plt.ylabel('Speed')
-    im = plt.scatter(power_list, speed_list, alpha = 0.1)
+    x, y, s = get_plot_grid(power_list, speed_list)
+    im = plt.scatter(x, y, s = s)
+    #im = plt.scatter(power_list, speed_list, alpha = 0.1)
     ims.append([im])
     
 agents = eliminate(agents)
